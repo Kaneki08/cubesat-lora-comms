@@ -154,3 +154,7 @@ lib_deps =
 ```
 
 PlatformIO installs these automatically during build. Do not manually copy external libraries into the repository unless there is a specific reason to vendor them.
+
+## Contributors  
+Derick Barrientos  
+Jonathan Lin  
