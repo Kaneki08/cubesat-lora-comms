@@ -44,6 +44,7 @@ struct IMUPayload
   int16_t qr;
 };
 
+// This data comes is read from the power board and then sent to avionics stm32
 struct BATTPayload
 {
  // TODO: add battery data fields
