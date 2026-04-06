@@ -3,6 +3,9 @@
 
 #include <stdint.h>
 
+// MACROS
+#define BUTTON_GPIO 10
+
 // Packet type definitions
 enum PacketType
 {

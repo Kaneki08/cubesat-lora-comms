@@ -3,9 +3,6 @@
 #include <RadioLib.h>
 #include "HopeRFTX.h"
 
-// MACROS
-#define BUTTON_GPIO 10
-
 // Initialize HopeRF
 Module module(7, 1, 2, 0);
 SX1278 radio(&module);
