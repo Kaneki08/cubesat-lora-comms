@@ -52,7 +52,9 @@ struct BATTPayload
 
 struct TCPayload
 {
- // TODO: add thermocouple data fields 
+ float tc_avg1;
+ float tc_avg2;
+ // TODO: verify later with avionics that we are using two averaged values 
 };
 
 #pragma pack(pop)
