@@ -1,6 +1,7 @@
 // include the library
 #include <Arduino.h>
 #include <RadioLib.h>
+#include "HopeRFTX.h"
 
 // MACROS
 #define BUTTON_GPIO 10
@@ -9,67 +10,13 @@
 Module module(7, 1, 2, 0);
 SX1278 radio(&module);
 
-enum PacketType
-{
-  PACKET_BATT = 1,  // battery data packet
-  PACKET_IMU = 2,  // imu data packet
-  PACKET_TC = 3,  // thermocouple data packet
-};
-
-// Packet frame structuring
-#pragma pack(push, 1)
-struct PacketHeader
-{
-  // Based on CCSDS
-  uint8_t sat_id;  // callsign??
-  uint8_t packet_type;  // bitfield
-  uint16_t sequence;  // packet order since transmission cycle start
-  uint32_t timestamp;  // since program start
-  uint8_t payload_len;  // in bytes
-};
-
-
-/*
-Expand out the following payloads with all necessary info according to https://docs.google.com/spreadsheets/d/13qsSh9g_9VDnHY6Gt52Ryx6YPZemS3kZyaQAJXoeYj8/edit?usp=sharing
-*/
-struct IMUPayload
-{
-  int16_t gx_dps;
-  int16_t gy_dps;
-  int16_t gz_dps;
-
-  int16_t ax_mg;
-  int16_t ay_mg;
-  int16_t az_mg;
-
-  int16_t qi;
-  int16_t qj;
-  int16_t qk;
-  int16_t qr;
-};
-
-struct BATTPayload
-{
-  
-};
-
-struct TCPayload
-{
-
-};
-#pragma pack(pop)
-
-// Place custom function prototypes:
-int transmitData();
-uint8_t encodeHex(uint8_t* queue, PacketHeader* header, void* payload);
-bool debounceRead(int gpio);
-
+// Dummy data to test physical configuration and radio transmission functionality 
 byte test[8] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08};
 
-// save transmission state between loops
+// Save transmission state between loops
 int transmissionState = RADIOLIB_ERR_NONE;
 
-// flag to indicate that a packet was sent
+// Flag to indicate that a packet was sent
 volatile bool transmittedFlag = true;
 
 // this function is called when a complete packet
@@ -96,8 +43,12 @@ uint8_t encodeHex(uint8_t* queue, PacketHeader* header, void* payload)
   memcpy(queue + dataLen, header, sizeof(PacketHeader));  // copy all header data to the queue, indicating the size of header data
   dataLen += sizeof(PacketHeader);  // track data length: queue has now incremented from current position to (sizeof(PacketHeader))
 
+  // add a space between packet header and packet payload
+
   memcpy(queue + dataLen, payload, header->payload_len);  // copy all payload data to the queue. Get info from header about the payload size
   dataLen += header->payload_len;
+
+  // REQUIRED: add overflow checks, clear memory if needed, etc.
 
   return dataLen;
 }
@@ -156,23 +107,55 @@ void setup() {
 // counter to keep track of transmitted packets
 int count = 0;
 
+/* Initialize Packet Header */
+struct PacketHeader newPacketHeader = {
+  .sat_id = 0x01,                     // callsign??
+  .packet_type = PACKET_IMU,          // bitfield
+  .sequence = count,                  // packet order since transmission cycle start
+  .timestamp = millis(),              // since program start
+  .payload_len = sizeof(IMUPayload),  // in bytes
+};
+
+/* Initialize IMU Payload */
+struct IMUPayload newIMUPayload = {
+  .gx_dps = 0,
+  .gy_dps = 0,
+  .gz_dps = 0,
+
+  .ax_mg = 0,
+  .ay_mg = 0,
+  .az_mg = 0,
+
+  .qi = 0,
+  .qj = 0,
+  .qk = 0,
+  .qr = 0
+};
+
+/* Initialize TX Buffer */
+uint8_t TXBuffer[256];
+
+/* Encode Packet Into Hex */
+uint8_t dataLen = encodeHex(TXBuffer, &newPacketHeader, &newIMUPayload);
+
 void loop() {
   bool buttonFlag = debounceRead(BUTTON_GPIO);
 
-  // check if the previous transmission finished
+  // Check if the previous transmission finished
   if(transmittedFlag && buttonFlag)
   {
 
-    // reset transmittedFlag (no need to reset buttonFlag since it updates automatically)
+    // Reset transmittedFlag (no need to reset buttonFlag since it updates automatically)
     transmittedFlag = false;
 
     for (int i=0; i < 10; i++)
     {
       Serial.print(F("[SX1278] Sending packet ... "));
-    transmissionState = radio.startTransmit(test, 8);
+      // transmissionState = radio.startTransmit(test, 8);
+      transmissionState = radio.startTransmit(TXBuffer, dataLen);
 
     if (transmissionState == RADIOLIB_ERR_NONE) {
-      // packet was successfully sent
+      // Packet was successfully sent
       Serial.println(F("transmission finished!"));
     }
     else {
@@ -180,7 +163,7 @@ void loop() {
       Serial.println(transmissionState);
     }
 
-
+    // 500 ms delay necessary for proper reception but I forgot why @Ibrahim 
     delay(500);
 
     // clean up after transmission is finished
@@ -190,3 +173,21 @@ void loop() {
     }
   }
 }
+
+
+
+/*
+Process to transmit data:
+1. Create packet header and payload structs, fill in all necessary information
+2. Create a byte array, TXBuffer, to hold the encoded packet header and payload information
+3. Call encodeHex(TXBuffer, &PacketHeader, &IMUPayload) to parse the header and payload data into the TXBuffer byte array, returning the number of bytes to be transmitted in radio.transmit(TXBuffer, dataLen)
+4. Call radio.transmit(TXBuffer, dataLen) to transmit the data in the TXBuffer byte array, where dataLen is the number of bytes to be transmitted as returned by encodeHex()
+
+TXBuffer[256];
+
+encodeHex(TXBuffer, &PacketHeader, &IMUPayload);
+
+TXBuffer -> {first few bytes = packet header, all bytes of payload}
+
+transmit(txbuffer)
+*/
