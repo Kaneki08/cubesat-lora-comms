@@ -157,5 +157,5 @@ PlatformIO installs these automatically during build. Do not manually copy exter
 
 ## Contributors  
 Derick Barrientos  
-Ibrahim Hussein
+Ibrahim Hussein  
 Jonathan Lin  

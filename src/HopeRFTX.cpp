@@ -172,6 +172,26 @@ void loop() {
 }
 
 
+/*
+Ideal Downlink Situation: 
+
+1. Collect all onboard sensor data and process it in the avionics MCU 
+2. Transmit 1 packet that contains all telemetry in a well defined and ordered format
+3. Receive the full packet without any errors
+
+Problems with Ideal Situation: 
+1. Overflow of data
+2. Packet loss/ corruption due to interference or unreliable radio link
+
+
+Realistic Downlink Situation:
+1. Collect all onboard sensor data and process it in the avionics MCU
+2. Transmit multiple packets separating different sensor categories to reduce overflow 
+3. Need CRC and FEC but adds overhead 
+
+
+*/
+
 
 /*
 Process to transmit data:
@@ -188,3 +208,4 @@ TXBuffer -> {first few bytes = packet header, all bytes of payload}
 
 transmit(txbuffer)
 */
+
