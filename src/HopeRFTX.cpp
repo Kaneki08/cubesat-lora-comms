@@ -134,8 +134,8 @@ struct IMUPayload newIMUPayload = {
 
 /* Initialize TC Payload */
 struct TCPayload newTCPayload = {
-  tc_avg1 = 0;
-  tc_avg2 = 0;
+  .tc_avg1 = 0,
+  .tc_avg2 = 0
 };
 
 /* Initialize TX Buffer */
@@ -149,6 +149,7 @@ void transmit() {
   for (int i=0; i < 10; i++) {
     Serial.print(F("[SX1278] Sending packet ... "));
     // transmissionState = radio.startTransmit(test, 8);
+    // transmissionState = radio.startTransmit(helloLora, 10);
     transmissionState = radio.startTransmit(TXBuffer, dataLen);
 
     if (transmissionState == RADIOLIB_ERR_NONE) {
