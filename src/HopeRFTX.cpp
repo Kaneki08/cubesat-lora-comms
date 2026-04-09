@@ -10,6 +10,9 @@ SX1278 radio(&module);
 // Dummy data to test physical configuration and radio transmission functionality 
 byte test[8] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08};
 
+// Test string transmission 
+byte helloLora[10] = {0x68, 0x65, 0x6C, 0x6C, 0x6F, 0x20, 0x4C, 0x6F, 0x52, 0x61};
+
 // Save transmission state between loops
 int transmissionState = RADIOLIB_ERR_NONE;
 
@@ -139,7 +142,7 @@ void loop() {
   bool buttonFlag = debounceRead(BUTTON_GPIO);
 
   // Check if the previous transmission finished
-  if(transmittedFlag && buttonFlag)
+  if (transmittedFlag && buttonFlag)
   {
 
     // Reset transmittedFlag (no need to reset buttonFlag since it updates automatically)
@@ -149,6 +152,7 @@ void loop() {
     {
       Serial.print(F("[SX1278] Sending packet ... "));
       // transmissionState = radio.startTransmit(test, 8);
+      // transmissionState = radio.startTransmit(helloLora, 10);
       transmissionState = radio.startTransmit(TXBuffer, dataLen);
 
     if (transmissionState == RADIOLIB_ERR_NONE) {
@@ -168,6 +172,11 @@ void loop() {
     // RF switch is powered down etc.
     radio.finishTransmit();
     }
+
+    
+
+
+
   }
 }
 

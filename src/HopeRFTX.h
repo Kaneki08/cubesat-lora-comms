@@ -53,6 +53,7 @@ struct BATTPayload
  // TODO: add battery data fields
 };
 
+// Thermocouple 
 struct TCPayload
 {
  float tc_avg1;
