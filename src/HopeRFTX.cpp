@@ -132,28 +132,24 @@ struct IMUPayload newIMUPayload = {
   .qr = 0
 };
 
+/* Initialize TC Payload */
+struct TCPayload newTCPayload = {
+  tc_avg1 = 0;
+  tc_avg2 = 0;
+};
+
 /* Initialize TX Buffer */
 uint8_t TXBuffer[256];
 
 /* Encode Packet Into Hex */
 uint8_t dataLen = encodeHex(TXBuffer, &newPacketHeader, &newIMUPayload);
 
-void loop() {
-  bool buttonFlag = debounceRead(BUTTON_GPIO);
-
-  // Check if the previous transmission finished
-  if (transmittedFlag && buttonFlag)
-  {
-
-    // Reset transmittedFlag (no need to reset buttonFlag since it updates automatically)
-    transmittedFlag = false;
-
-    for (int i=0; i < 10; i++)
-    {
-      Serial.print(F("[SX1278] Sending packet ... "));
-      // transmissionState = radio.startTransmit(test, 8);
-      // transmissionState = radio.startTransmit(helloLora, 10);
-      transmissionState = radio.startTransmit(TXBuffer, dataLen);
+// helper function to transit packages
+void transmit() {
+  for (int i=0; i < 10; i++) {
+    Serial.print(F("[SX1278] Sending packet ... "));
+    // transmissionState = radio.startTransmit(test, 8);
+    transmissionState = radio.startTransmit(TXBuffer, dataLen);
 
     if (transmissionState == RADIOLIB_ERR_NONE) {
       // Packet was successfully sent
@@ -171,12 +167,22 @@ void loop() {
     // this will ensure transmitter is disabled,
     // RF switch is powered down etc.
     radio.finishTransmit();
-    }
+  }
+  
+  // clear TXBuffer
+}
 
-    
+void loop() {
+  bool buttonFlag = debounceRead(BUTTON_GPIO);
 
+  // Check if the previous transmission finished
+  if(transmittedFlag && buttonFlag)
+  {
 
+    // Reset transmittedFlag (no need to reset buttonFlag since it updates automatically)
+    transmittedFlag = false;
 
+    transmit();
   }
 }
 
