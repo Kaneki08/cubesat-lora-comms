@@ -143,24 +143,24 @@ uint16_t average_voltage;
 };
 
 struct combined_telemetry_1{
-  int16_t current;
-  int16_t avg_current;
-  uint16_t voltage;
-  uint16_t average_voltage;
-  uint16_t cycle_count;
-  uint16_t temperature;
-  uint16_t external_temp_sensor1;
-  uint16_t external_temp_sensor2;
-  uint16_t external_temp_sensor3;
-  uint16_t external_temp_sensor4;
-  uint16_t external_temp_sensor5;
-  uint16_t external_temp_sensor6;
-  uint16_t external_temp_sensor7;
-  uint16_t external_temp_sensor8;
-  uint16_t cell_voltage1;
-  uint16_t cell_voltage2;
-  uint16_t cell_voltage3;
-  uint16_t cell_voltage4;
+  int16_t current_mA = -10;
+  int16_t avg_current_mA = -154;
+  uint16_t voltage_mV = 13926;
+  uint16_t average_voltage_mV = 13825;
+  uint16_t cycle_count = 187;
+  uint16_t temperature_0_1K = 3003;
+  uint16_t external_temp_sensor1_0_1K = 3003;
+  uint16_t external_temp_sensor2_0_1K = 3013;
+  uint16_t external_temp_sensor3_0_1K = 3015;
+  uint16_t external_temp_sensor4_0_1K = 3016;
+  uint16_t external_temp_sensor5_0_1K = 3015;
+  uint16_t external_temp_sensor6_0_1K = 3016;
+  uint16_t external_temp_sensor7_0_1K = 3017;
+  uint16_t external_temp_sensor8_0_1K = 2977;
+  uint16_t cell_voltage1_mV;
+  uint16_t cell_voltage2_mV;
+  uint16_t cell_voltage3_mV;
+  uint16_t cell_voltage4_mV;
 } combined_telemetry_1;
 
 
