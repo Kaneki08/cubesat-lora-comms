@@ -140,6 +140,8 @@ uint16_t pack_voltage;
 uint16_t average_voltage;
 */
 
+};
+
 struct combined_telemetry_1{
   int16_t current;
   int16_t avg_current;
@@ -161,9 +163,6 @@ struct combined_telemetry_1{
   uint16_t cell_voltage4;
 } combined_telemetry_1;
 
-
-
-};
 
 struct TCPayload
 {
