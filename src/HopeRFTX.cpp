@@ -71,6 +71,7 @@ bool debounceRead(int gpio)
       t1 = t2;
       return true;
     }
+    
   }
   
   return false;
@@ -131,12 +132,33 @@ struct IMUPayload newIMUPayload = {
   .qk = 0,
   .qr = 0
 };
-
+struct combined_telemetry_1 newcombined_telemetry_1 = {
+		.current_mA = -10,
+		.avg_current_mA = -154,
+		.voltage_mV = 13926,
+		.average_voltage_mV = 13825,
+		.cycle_count = 187,
+		.temperature_0_1K = 3003,
+		.external_temp_sensor1_0_1K = 3003,
+		.external_temp_sensor2_0_1K = 3013,
+		.external_temp_sensor3_0_1K = 3015,
+		.external_temp_sensor4_0_1K = 3016,
+		.external_temp_sensor5_0_1K = 3015,
+		.external_temp_sensor6_0_1K = 3016,
+		.external_temp_sensor7_0_1K = 3017,
+		.external_temp_sensor8_0_1K = 2977,
+		.cell_voltage1_mV = 0,
+		.cell_voltage2_mV = 0,
+		.cell_voltage3_mV = 0,
+		.cell_voltage4_mV = 0
+};
 /* Initialize TC Payload */
 struct TCPayload newTCPayload = {
   .tc_avg1 = 0,
   .tc_avg2 = 0
 };
+
+
 
 /* Initialize TX Buffer */
 uint8_t TXBuffer[256];
@@ -186,6 +208,8 @@ void loop() {
     transmit();
   }
 }
+
+
 
 
 /*
