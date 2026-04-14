@@ -105,7 +105,7 @@ void setup() {
 }
 
 // counter to keep track of transmitted packets
-int count = 0;
+uint16_t count = 0;
 
 /* Initialize Packet Header */
 struct PacketHeader newPacketHeader = {
@@ -148,9 +148,9 @@ uint8_t dataLen = encodeHex(TXBuffer, &newPacketHeader, &newIMUPayload);
 void transmit() {
   for (int i=0; i < 10; i++) {
     Serial.print(F("[SX1278] Sending packet ... "));
-    // transmissionState = radio.startTransmit(test, 8);
+    transmissionState = radio.startTransmit(test, 8);
     // transmissionState = radio.startTransmit(helloLora, 10);
-    transmissionState = radio.startTransmit(TXBuffer, dataLen);
+    // transmissionState = radio.startTransmit(TXBuffer, dataLen);
 
     if (transmissionState == RADIOLIB_ERR_NONE) {
       // Packet was successfully sent
