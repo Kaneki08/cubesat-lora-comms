@@ -143,25 +143,25 @@ uint16_t average_voltage;
 };
 
 struct combined_telemetry_1{
-  int16_t current;
-  int16_t avg_current;
-  uint16_t voltage;
-  uint16_t average_voltage;
+  int16_t current_mA;
+  int16_t avg_current_mA;
+  uint16_t voltage_mV;
+  uint16_t average_voltage_mV;
   uint16_t cycle_count;
-  uint16_t temperature;
-  uint16_t external_temp_sensor1;
-  uint16_t external_temp_sensor2;
-  uint16_t external_temp_sensor3;
-  uint16_t external_temp_sensor4;
-  uint16_t external_temp_sensor5;
-  uint16_t external_temp_sensor6;
-  uint16_t external_temp_sensor7;
-  uint16_t external_temp_sensor8;
-  uint16_t cell_voltage1;
-  uint16_t cell_voltage2;
-  uint16_t cell_voltage3;
-  uint16_t cell_voltage4;
-} combined_telemetry_1;
+  uint16_t temperature_0_1K;
+  uint16_t external_temp_sensor1_0_1K;
+  uint16_t external_temp_sensor2_0_1K;
+  uint16_t external_temp_sensor3_0_1K;
+  uint16_t external_temp_sensor4_0_1K;
+  uint16_t external_temp_sensor5_0_1K;
+  uint16_t external_temp_sensor6_0_1K;
+  uint16_t external_temp_sensor7_0_1K;
+  uint16_t external_temp_sensor8_0_1K;
+  uint16_t cell_voltage1_mV;
+  uint16_t cell_voltage2_mV;
+  uint16_t cell_voltage3_mV;
+  uint16_t cell_voltage4_mV;
+};
 
 
 struct TCPayload
