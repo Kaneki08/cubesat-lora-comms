@@ -108,15 +108,6 @@ void setup() {
 // counter to keep track of transmitted packets
 uint16_t count = 0;
 
-/* Initialize Packet Header */
-struct PacketHeader newPacketHeader = {
-  .sat_id = 0x01,                     // callsign??
-  .packet_type = PACKET_IMU,          // bitfield
-  .sequence = count,                  // packet order since transmission cycle start
-  .timestamp = millis(),              // since program start
-  .payload_len = sizeof(IMUPayload),  // in bytes
-};
-
 /* Initialize IMU Payload */
 struct IMUPayload newIMUPayload = {
   .gx_dps = 0,
@@ -132,6 +123,7 @@ struct IMUPayload newIMUPayload = {
   .qk = 0,
   .qr = 0
 };
+
 struct combined_telemetry_1 newcombined_telemetry_1 = {
 		.current_mA = -10,
 		.avg_current_mA = -154,
@@ -160,22 +152,30 @@ struct TCPayload newTCPayload = {
 
 
 
-/* Initialize TX Buffer */
-uint8_t TXBuffer[256];
-
-/* Encode Packet Into Hex */
-uint8_t dataLen = encodeHex(TXBuffer, &newPacketHeader, &newIMUPayload);
-
 // helper function to transit packages
-void transmit() {
-  for (int i=0; i < 10; i++) {
-    Serial.print(F("[SX1278] Sending packet ... "));
-    transmissionState = radio.startTransmit(test, 8);
-    // transmissionState = radio.startTransmit(helloLora, 10);
-    // transmissionState = radio.startTransmit(TXBuffer, dataLen);
+void transmit(uint8_t packet_type, void* payload, uint8_t payload_size) {
+  uint8_t TXBuffer[256];
+  
+  // Create fresh header for this transmission
+  PacketHeader header = {
+    .sat_id = 0x01,
+    .packet_type = packet_type,      // Use passed packet type
+    .sequence = count++,              // Increment sequence number
+    .timestamp = millis(),            // Fresh timestamp
+    .payload_len = payload_size
+  };
+  
+  // Encode header + payload
+  uint8_t dataLen = encodeHex(TXBuffer, &header, payload);
+  
+  for (int i = 0; i < 10; i++) {
+    Serial.print(F("[SX1278] Sending packet type "));
+    Serial.print(packet_type);
+    Serial.print(F(" ... "));
+    
+    transmissionState = radio.startTransmit(TXBuffer, dataLen);
 
     if (transmissionState == RADIOLIB_ERR_NONE) {
-      // Packet was successfully sent
       Serial.println(F("transmission finished!"));
     }
     else {
@@ -183,29 +183,43 @@ void transmit() {
       Serial.println(transmissionState);
     }
 
-    // 500 ms delay necessary for proper reception but I forgot why @Ibrahim 
     delay(500);
-
-    // clean up after transmission is finished
-    // this will ensure transmitter is disabled,
-    // RF switch is powered down etc.
     radio.finishTransmit();
   }
-  
-  // clear TXBuffer
 }
 
 void loop() {
   bool buttonFlag = debounceRead(BUTTON_GPIO);
 
-  // Check if the previous transmission finished
   if(transmittedFlag && buttonFlag)
   {
-
-    // Reset transmittedFlag (no need to reset buttonFlag since it updates automatically)
     transmittedFlag = false;
 
-    transmit();
+    // Update TC payload with fresh data
+    TCPayload tcData = {
+      .tc_avg1 = 25.5,
+      .tc_avg2 = 26.3
+    };
+    
+    // Try transmitting the IMU packet with fresh data
+    // IMUPayload imuData = {
+    //   .gx_dps = 1.2,
+    //   .gy_dps = 0.5,
+    //   .gz_dps = -0.8,
+
+    //   .ax_mg = 100,
+    //   .ay_mg = -50,
+    //   .az_mg = 980,
+
+    //   .qi = 0.707,
+    //   .qj = 0,
+    //   .qk = 0.707,
+    //   .qr = 0
+    // };
+
+    transmit(PACKET_IMU, &newIMUPayload, sizeof(newIMUPayload));
+    // transmit(PACKET_TC, &tcData, sizeof(TCPayload));
+
   }
 }
 
