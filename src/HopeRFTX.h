@@ -13,6 +13,7 @@ enum PacketType
   PACKET_BATT = 1,  // battery data packet
   PACKET_IMU = 2,  // imu data packet
   PACKET_TC = 3,  // thermocouple data packet
+  PACKET_STRING = 4  // string data packet
 };
 
 // Packet frame structuring with tight byte packing 
@@ -171,7 +172,15 @@ struct TCPayload
  // TODO: verify later with avionics that we are using two averaged values 
 };
 
+struct StringPayload {
+  char message[50]; // 50-byte string buffer
+};
+
 #pragma pack(pop)
+
+
+
+
 
 // Function prototypes
 int transmitData();

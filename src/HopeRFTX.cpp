@@ -13,6 +13,9 @@ byte test[8] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08};
 // Test string transmission 
 byte helloLora[10] = {0x68, 0x65, 0x6C, 0x6C, 0x6F, 0x20, 0x4C, 0x6F, 0x52, 0x61};
 
+// String packet
+StringPayload stringPacket;
+
 // Save transmission state between loops
 int transmissionState = RADIOLIB_ERR_NONE;
 
@@ -103,6 +106,9 @@ void setup() {
   // set the function that will be called
   // when packet transmission is finished
   radio.setPacketSentAction(setFlag);
+
+  strcpy(stringPacket.message, "Hello World!");
+
 }
 
 // counter to keep track of transmitted packets
@@ -152,39 +158,55 @@ struct TCPayload newTCPayload = {
 
 
 
+
 // helper function to transit packages
 void transmit(uint8_t packet_type, void* payload, uint8_t payload_size) {
   uint8_t TXBuffer[256];
   
-  // Create fresh header for this transmission
-  PacketHeader header = {
-    .sat_id = 0x01,
-    .packet_type = packet_type,      // Use passed packet type
-    .sequence = count++,              // Increment sequence number
-    .timestamp = millis(),            // Fresh timestamp
-    .payload_len = payload_size
-  };
-  
-  // Encode header + payload
-  uint8_t dataLen = encodeHex(TXBuffer, &header, payload);
-  
-  for (int i = 0; i < 10; i++) {
+  int packets = 100;  // Number of packets to transmit in the loop
+  for (int i = 0; i < packets; i++) {
+    // Create fresh header for each transmission in the loop
+    PacketHeader header = {
+      .sat_id = 0x01,
+      .packet_type = packet_type,      // Use passed packet type
+      .sequence = count++,              // Increment sequence number
+      .timestamp = millis(),            // Fresh timestamp
+      .payload_len = payload_size
+    };
+    
+    // Encode header + payload
+    uint8_t dataLen = encodeHex(TXBuffer, &header, payload);
+    
     Serial.print(F("[SX1278] Sending packet type "));
     Serial.print(packet_type);
-    Serial.print(F(" ... "));
-    
+    Serial.print(F(" (attempt "));
+    Serial.print(i + 1);
+    Serial.print(F("/"));
+    Serial.print(packets);
+    Serial.print(F(") ... "));
+
+    transmittedFlag = false;  // Reset flag before transmission
     transmissionState = radio.startTransmit(TXBuffer, dataLen);
 
     if (transmissionState == RADIOLIB_ERR_NONE) {
-      Serial.println(F("transmission finished!"));
+      // Wait for setFlag() ISR to set transmittedFlag = true
+      unsigned long timeout = millis() + 5000;  // 5 second timeout
+      while (!transmittedFlag && millis() < timeout) {
+        delay(10);
+      }
+      
+      if (transmittedFlag) {
+        Serial.println(F("transmission finished!"));
+      } else {
+        Serial.println(F("transmission timeout!"));
+      }
     }
     else {
       Serial.print(F("failed, code "));
       Serial.println(transmissionState);
     }
 
-    delay(500);
-    radio.finishTransmit();
+    delay(500);  // Wait before next transmission
   }
 }
 
@@ -217,8 +239,10 @@ void loop() {
     //   .qr = 0
     // };
 
-    transmit(PACKET_IMU, &newIMUPayload, sizeof(newIMUPayload));
+    // transmit(PACKET_IMU, &newIMUPayload, sizeof(newIMUPayload));
     // transmit(PACKET_TC, &tcData, sizeof(TCPayload));
+
+    transmit(PACKET_STRING, &stringPacket, sizeof(StringPayload));
 
   }
 }
