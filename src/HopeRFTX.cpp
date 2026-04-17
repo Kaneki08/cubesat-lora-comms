@@ -3,6 +3,9 @@
 #include <RadioLib.h>
 #include "HopeRFTX.h"
 
+
+
+
 // Initialize HopeRF
 Module module(7, 1, 2, 0);
 SX1278 radio(&module);
@@ -33,7 +36,11 @@ void setFlag(void) {
   // we sent a packet, set the flag
   transmittedFlag = true;
 }
-
+uint32_t generate_checksum(const uint8_t* queue, const size_t len){
+  RadioLibCRC RLcrc;
+  return (RLcrc.checksum(queue, len));
+  
+}
 /*
 encodeHex():
 Parses header and payload data into a byte array, queue, returning # of indexes (dataLen) to be transmitted in radio.transmit(queue, dataLen)
@@ -130,7 +137,7 @@ struct IMUPayload newIMUPayload = {
   .qr = 0
 };
 
-struct batt_combined_telemetry_1 newcombined_telemetry_1 = {
+struct combined_telemetry_1 newcombined_telemetry_1 = {
 		.current_mA = -10,
 		.avg_current_mA = -154,
 		.voltage_mV = 13926,
@@ -150,7 +157,6 @@ struct batt_combined_telemetry_1 newcombined_telemetry_1 = {
 		.cell_voltage3_mV = 0,
 		.cell_voltage4_mV = 0
 };
-
 /* Initialize TC Payload */
 struct TCPayload newTCPayload = {
   .tc_avg1 = 0,
@@ -158,23 +164,25 @@ struct TCPayload newTCPayload = {
 };
 
 
-struct full_telemetry newfull_telemetry = {
-  .imu_payload = newIMUPayload,
-  .batt_payload = newcombined_telemetry_1,
-  .tc_payload = newTCPayload
-};
+void append_checksum(uint8_t* queue, uint8_t& dataLen, uint32_t checksum) {
+  queue[dataLen]     = checksum & 0xFF;        
+  queue[dataLen + 1]     = (checksum >> 8) & 0xFF;         
+  queue[dataLen + 2]     = (checksum >> 16) & 0xFF;         
+  queue[dataLen + 3]     = (checksum >> 24) & 0xFF;     
+  dataLen += 4;  
 
+}
 
 // helper function to transit packages
 void transmit(uint8_t packet_type, void* payload, uint8_t payload_size) {
   uint8_t TXBuffer[256];
-
-  int packets = 10;  // Number of packets to transmit in the loop
+  
+  int packets = 100;  // Number of packets to transmit in the loop
   for (int i = 0; i < packets; i++) {
     // Create fresh header for each transmission in the loop
     PacketHeader header = {
       .sat_id = 0x01,
-      .packet_type = packet_type,      // Use passed packet type      // eliminate later
+      .packet_type = packet_type,      // Use passed packet type
       .sequence = count++,              // Increment sequence number
       .timestamp = millis(),            // Fresh timestamp
       .payload_len = payload_size
@@ -182,6 +190,11 @@ void transmit(uint8_t packet_type, void* payload, uint8_t payload_size) {
     
     // Encode header + payload
     uint8_t dataLen = encodeHex(TXBuffer, &header, payload);
+    
+    // calculate checksum and append to the end of the TXBuffer
+    uint32_t checksum = generate_checksum(TXBuffer, dataLen);
+    append_checksum(TXBuffer, dataLen, checksum);
+    
     
     Serial.print(F("[SX1278] Sending packet type "));
     Serial.print(packet_type);
@@ -196,7 +209,7 @@ void transmit(uint8_t packet_type, void* payload, uint8_t payload_size) {
 
     if (transmissionState == RADIOLIB_ERR_NONE) {
       // Wait for setFlag() ISR to set transmittedFlag = true
-      unsigned long timeout = millis() + 10000;  // 10 second timeout
+      unsigned long timeout = millis() + 5000;  // 5 second timeout
       while (!transmittedFlag && millis() < timeout) {
         delay(10);
       }
@@ -218,8 +231,6 @@ void transmit(uint8_t packet_type, void* payload, uint8_t payload_size) {
 
 void loop() {
   bool buttonFlag = debounceRead(BUTTON_GPIO);
-  Serial.print("Button Flag: ");
-  Serial.println(buttonFlag);
 
   if(transmittedFlag && buttonFlag)
   {
@@ -249,11 +260,13 @@ void loop() {
 
     // transmit(PACKET_IMU, &newIMUPayload, sizeof(newIMUPayload));
     // transmit(PACKET_TC, &tcData, sizeof(TCPayload));
-    // transmit(PACKET_STRING, &stringPacket, sizeof(StringPayload));
 
-    transmit(PACKET_FULL_TELEMETRY, &newfull_telemetry, sizeof(full_telemetry));
+    transmit(PACKET_STRING, &stringPacket, sizeof(StringPayload));
+
   }
 }
+
+
 
 
 /*

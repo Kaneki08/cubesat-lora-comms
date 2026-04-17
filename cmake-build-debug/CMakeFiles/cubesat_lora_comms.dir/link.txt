@@ -1,0 +1,1 @@
+/usr/bin/c++ -g CMakeFiles/cubesat_lora_comms.dir/src/HopeRFTX.cpp.o -o cubesat_lora_comms 
