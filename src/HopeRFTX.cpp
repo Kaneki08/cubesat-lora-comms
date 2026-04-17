@@ -130,7 +130,7 @@ struct IMUPayload newIMUPayload = {
   .qr = 0
 };
 
-struct combined_telemetry_1 newcombined_telemetry_1 = {
+struct batt_combined_telemetry_1 newcombined_telemetry_1 = {
 		.current_mA = -10,
 		.avg_current_mA = -154,
 		.voltage_mV = 13926,
@@ -150,6 +150,7 @@ struct combined_telemetry_1 newcombined_telemetry_1 = {
 		.cell_voltage3_mV = 0,
 		.cell_voltage4_mV = 0
 };
+
 /* Initialize TC Payload */
 struct TCPayload newTCPayload = {
   .tc_avg1 = 0,
@@ -157,18 +158,23 @@ struct TCPayload newTCPayload = {
 };
 
 
+struct full_telemetry newfull_telemetry = {
+  .imu_payload = newIMUPayload,
+  .batt_payload = newcombined_telemetry_1,
+  .tc_payload = newTCPayload
+};
 
 
 // helper function to transit packages
 void transmit(uint8_t packet_type, void* payload, uint8_t payload_size) {
   uint8_t TXBuffer[256];
-  
-  int packets = 100;  // Number of packets to transmit in the loop
+
+  int packets = 10;  // Number of packets to transmit in the loop
   for (int i = 0; i < packets; i++) {
     // Create fresh header for each transmission in the loop
     PacketHeader header = {
       .sat_id = 0x01,
-      .packet_type = packet_type,      // Use passed packet type
+      .packet_type = packet_type,      // Use passed packet type      // eliminate later
       .sequence = count++,              // Increment sequence number
       .timestamp = millis(),            // Fresh timestamp
       .payload_len = payload_size
@@ -190,7 +196,7 @@ void transmit(uint8_t packet_type, void* payload, uint8_t payload_size) {
 
     if (transmissionState == RADIOLIB_ERR_NONE) {
       // Wait for setFlag() ISR to set transmittedFlag = true
-      unsigned long timeout = millis() + 5000;  // 5 second timeout
+      unsigned long timeout = millis() + 10000;  // 10 second timeout
       while (!transmittedFlag && millis() < timeout) {
         delay(10);
       }
@@ -212,6 +218,8 @@ void transmit(uint8_t packet_type, void* payload, uint8_t payload_size) {
 
 void loop() {
   bool buttonFlag = debounceRead(BUTTON_GPIO);
+  Serial.print("Button Flag: ");
+  Serial.println(buttonFlag);
 
   if(transmittedFlag && buttonFlag)
   {
@@ -241,13 +249,11 @@ void loop() {
 
     // transmit(PACKET_IMU, &newIMUPayload, sizeof(newIMUPayload));
     // transmit(PACKET_TC, &tcData, sizeof(TCPayload));
+    // transmit(PACKET_STRING, &stringPacket, sizeof(StringPayload));
 
-    transmit(PACKET_STRING, &stringPacket, sizeof(StringPayload));
-
+    transmit(PACKET_FULL_TELEMETRY, &newfull_telemetry, sizeof(full_telemetry));
   }
 }
-
-
 
 
 /*

@@ -13,7 +13,8 @@ enum PacketType
   PACKET_BATT = 1,  // battery data packet
   PACKET_IMU = 2,  // imu data packet
   PACKET_TC = 3,  // thermocouple data packet
-  PACKET_STRING = 4  // string data packet
+  PACKET_STRING = 4,  // string data packet
+  PACKET_FULL_TELEMETRY = 5  // combined telemetry packet
 };
 
 // Packet frame structuring with tight byte packing 
@@ -143,7 +144,7 @@ uint16_t average_voltage;
 
 };
 
-struct combined_telemetry_1{
+struct batt_combined_telemetry_1{
   int16_t current_mA;
   int16_t avg_current_mA;
   uint16_t voltage_mV;
@@ -175,6 +176,14 @@ struct TCPayload
 struct StringPayload {
   char message[50]; // 50-byte string buffer
 };
+
+
+struct full_telemetry {
+  struct IMUPayload imu_payload;
+  struct batt_combined_telemetry_1 batt_payload;
+  struct TCPayload tc_payload;
+};
+
 
 #pragma pack(pop)
 
