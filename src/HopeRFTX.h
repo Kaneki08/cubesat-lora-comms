@@ -193,7 +193,7 @@ struct full_telemetry {
 
 // Function prototypes
 int transmitData();
-uint8_t encodeHex(uint8_t* queue, PacketHeader* header, void* payload);
+uint8_t encodeHex(uint8_t* queue, size_t queue_size, const PacketHeader* header, const void* payload);
 bool debounceRead(int gpio);
 
 #endif // HOPERFTX_H

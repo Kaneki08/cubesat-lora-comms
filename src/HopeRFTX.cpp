@@ -3,8 +3,9 @@
 #include <RadioLib.h>
 #include "HopeRFTX.h"
 
-
-
+namespace {
+  constexpr size_t kTxBufferSize = 256;
+}
 
 // Initialize HopeRF
 Module module(7, 1, 2, 0);
@@ -36,18 +37,19 @@ void setFlag(void) {
   // we sent a packet, set the flag
   transmittedFlag = true;
 }
-uint32_t generate_checksum(const uint8_t* queue, const size_t len){
-  RadioLibCRC RLcrc;
-  return (RLcrc.checksum(queue, len));
-  
-}
+
 /*
 encodeHex():
-Parses header and payload data into a byte array, queue, returning # of indexes (dataLen) to be transmitted in radio.transmit(queue, dataLen)
-Uses memcpy() to copy information first from the header, then the payload. In between, dataLen is incremented before being returned in the final line.
+Parses header and payload data into a byte array for radio.transmit().
+Uses memcpy() to copy information first from the header, then the payload.
 */
-uint8_t encodeHex(uint8_t* queue, PacketHeader* header, void* payload)
+uint8_t encodeHex(uint8_t* queue, size_t queue_size, const PacketHeader* header, const void* payload)
 {
+  const size_t required_size = sizeof(PacketHeader) + header->payload_len;
+  if ((required_size > queue_size) || (required_size > UINT8_MAX)) {
+    return 0;
+  }
+
   uint8_t dataLen = 0;
 
   memcpy(queue + dataLen, header, sizeof(PacketHeader));  // copy all header data to the queue, indicating the size of header data
@@ -57,8 +59,6 @@ uint8_t encodeHex(uint8_t* queue, PacketHeader* header, void* payload)
 
   memcpy(queue + dataLen, payload, header->payload_len);  // copy all payload data to the queue. Get info from header about the payload size
   dataLen += header->payload_len;
-
-  // REQUIRED: add overflow checks, clear memory if needed, etc.
 
   return dataLen;
 }
@@ -103,6 +103,10 @@ void setup() {
 
 
   if (state == RADIOLIB_ERR_NONE) {
+    state = radio.setCRC(true);
+  }
+
+  if (state == RADIOLIB_ERR_NONE) {
     Serial.println(F("success!"));
   } else {
     Serial.print(F("failed, code "));
@@ -137,7 +141,7 @@ struct IMUPayload newIMUPayload = {
   .qr = 0
 };
 
-struct combined_telemetry_1 newcombined_telemetry_1 = {
+struct batt_combined_telemetry_1 newcombined_telemetry_1 = {
 		.current_mA = -10,
 		.avg_current_mA = -154,
 		.voltage_mV = 13926,
@@ -163,19 +167,9 @@ struct TCPayload newTCPayload = {
   .tc_avg2 = 0
 };
 
-
-void append_checksum(uint8_t* queue, uint8_t& dataLen, uint32_t checksum) {
-  queue[dataLen]     = checksum & 0xFF;        
-  queue[dataLen + 1]     = (checksum >> 8) & 0xFF;         
-  queue[dataLen + 2]     = (checksum >> 16) & 0xFF;         
-  queue[dataLen + 3]     = (checksum >> 24) & 0xFF;     
-  dataLen += 4;  
-
-}
-
 // helper function to transit packages
 void transmit(uint8_t packet_type, void* payload, uint8_t payload_size) {
-  uint8_t TXBuffer[256];
+  uint8_t TXBuffer[kTxBufferSize];
   
   int packets = 100;  // Number of packets to transmit in the loop
   for (int i = 0; i < packets; i++) {
@@ -189,11 +183,11 @@ void transmit(uint8_t packet_type, void* payload, uint8_t payload_size) {
     };
     
     // Encode header + payload
-    uint8_t dataLen = encodeHex(TXBuffer, &header, payload);
-    
-    // calculate checksum and append to the end of the TXBuffer
-    uint32_t checksum = generate_checksum(TXBuffer, dataLen);
-    append_checksum(TXBuffer, dataLen, checksum);
+    uint8_t dataLen = encodeHex(TXBuffer, sizeof(TXBuffer), &header, payload);
+    if (dataLen == 0) {
+      Serial.println(F("[SX1278] Packet too large for TX buffer."));
+      continue;
+    }
     
     
     Serial.print(F("[SX1278] Sending packet type "));
@@ -294,14 +288,14 @@ Realistic Downlink Situation:
 Process to transmit data:
 1. Create packet header and payload structs, fill in all necessary information
 2. Create a byte array, TXBuffer, to hold the encoded packet header and payload information
-3. Call encodeHex(TXBuffer, &PacketHeader, &IMUPayload) to parse the header and payload data into the TXBuffer byte array, returning the number of bytes to be transmitted in radio.transmit(TXBuffer, dataLen)
+3. Call encodeHex(TXBuffer, sizeof(TXBuffer), &PacketHeader, &IMUPayload) to serialize the frame, returning the number of bytes to be transmitted in radio.transmit(TXBuffer, dataLen)
 4. Call radio.transmit(TXBuffer, dataLen) to transmit the data in the TXBuffer byte array, where dataLen is the number of bytes to be transmitted as returned by encodeHex()
 
 TXBuffer[256];
 
-encodeHex(TXBuffer, &PacketHeader, &IMUPayload);
+encodeHex(TXBuffer, sizeof(TXBuffer), &PacketHeader, &IMUPayload);
 
-TXBuffer -> {first few bytes = packet header, all bytes of payload}
+TXBuffer -> {packet header, payload}
 
 transmit(txbuffer)
 */
