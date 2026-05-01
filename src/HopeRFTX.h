@@ -20,6 +20,9 @@ enum PacketType
 // Packet frame structuring with tight byte packing 
 #pragma pack(push, 1)
 
+/*
+Packet header is 9 bytes
+*/
 struct PacketHeader
 {
   // Based on CCSDS
@@ -33,6 +36,7 @@ struct PacketHeader
 
 /*
 Expand out the following payloads with all necessary info according to https://docs.google.com/spreadsheets/d/13qsSh9g_9VDnHY6Gt52Ryx6YPZemS3kZyaQAJXoeYj8/edit?usp=sharing
+20 bytes for IMU data
 */
 struct IMUPayload
 {
@@ -144,6 +148,9 @@ uint16_t average_voltage;
 
 };
 
+/*
+38 bytes for battery data
+*/
 struct batt_combined_telemetry_1{
   int16_t current_mA;
   int16_t avg_current_mA;
@@ -165,7 +172,9 @@ struct batt_combined_telemetry_1{
   uint16_t cell_voltage4_mV;
 };
 
-
+/*
+8 bytes for thermocouple data
+*/
 struct TCPayload
 {
  float tc_avg1;
@@ -178,6 +187,12 @@ struct StringPayload {
 };
 
 
+/*
+20 bytes for IMU + 
+38 bytes for battery + 
+8 bytes for thermocouple 
+= 66 bytes total for full telemetry packet
+*/
 struct full_telemetry {
   struct IMUPayload imu_payload;
   struct batt_combined_telemetry_1 batt_payload;

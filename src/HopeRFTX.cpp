@@ -11,6 +11,15 @@ namespace {
 Module module(7, 1, 2, 0);
 SX1278 radio(&module);
 
+    /*!
+      \brief Module constructor.
+      \param hal A Hardware abstraction layer instance. An ArduinoHal instance for example.
+      \param cs Pin to be used as chip select.
+      \param irq Pin to be used as interrupt/GPIO.
+      \param rst Pin to be used as hardware reset for the module.
+      \param gpio Pin to be used as additional interrupt/GPIO.
+    */
+
 // Dummy data to test physical configuration and radio transmission functionality 
 byte test[8] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08};
 
@@ -55,7 +64,8 @@ uint8_t encodeHex(uint8_t* queue, size_t queue_size, const PacketHeader* header,
   memcpy(queue + dataLen, header, sizeof(PacketHeader));  // copy all header data to the queue, indicating the size of header data
   dataLen += sizeof(PacketHeader);  // track data length: queue has now incremented from current position to (sizeof(PacketHeader))
 
-  // add a space between packet header and packet payload
+  // Add a indicator character between packet header and packet payload
+  queue[dataLen++] = 0x24;  // Example indicator character // Encode $ into 0x24
 
   memcpy(queue + dataLen, payload, header->payload_len);  // copy all payload data to the queue. Get info from header about the payload size
   dataLen += header->payload_len;
@@ -91,7 +101,8 @@ bool debounceRead(int gpio)
 void setup() {
   Serial.begin(115200);
   delay(1000);
-  SPI.begin(4, 6, 5, 7);
+  // SPI.begin(4, 6, 5, 7);  // this is wrong pin mapping
+  SPI.begin(4, 5, 6, 7);  // SCK, MISO, MOSI, SS (CS) pins for ESP32-C3
 
   pinMode(BUTTON_GPIO, INPUT_PULLUP);
 
@@ -127,18 +138,18 @@ uint16_t count = 0;
 
 /* Initialize IMU Payload */
 struct IMUPayload newIMUPayload = {
-  .gx_dps = 0,
-  .gy_dps = 0,
-  .gz_dps = 0,
+  .gx_dps = 9,
+  .gy_dps = 1,
+  .gz_dps = 1,
 
-  .ax_mg = 0,
-  .ay_mg = 0,
-  .az_mg = 0,
+  .ax_mg = 1,
+  .ay_mg = 1,
+  .az_mg = 1,
 
-  .qi = 0,
-  .qj = 0,
-  .qk = 0,
-  .qr = 0
+  .qi = 1,
+  .qj = 6,
+  .qk = 1,
+  .qr = 7
 };
 
 struct batt_combined_telemetry_1 newcombined_telemetry_1 = {
@@ -167,11 +178,24 @@ struct TCPayload newTCPayload = {
   .tc_avg2 = 0
 };
 
+
+struct full_telemetry newfull_telemetry = {
+  .imu_payload = newIMUPayload,
+  .batt_payload = newcombined_telemetry_1,
+  .tc_payload = newTCPayload
+};
+
+
+
 // helper function to transit packages
 void transmit(uint8_t packet_type, void* payload, uint8_t payload_size) {
-  uint8_t TXBuffer[kTxBufferSize];
-  
-  int packets = 100;  // Number of packets to transmit in the loop
+
+  // Translate numerical data into ascii-hex encoding too
+
+  uint8_t TXBuffer[128];    // Holds raw binary data
+  uint8_t asciiBuffer[256]; // Holds coverted ASCII-hex data (needs to be 2x the size)
+
+  int packets = 10;  // Number of packets to transmit in the loop
   for (int i = 0; i < packets; i++) {
     // Create fresh header for each transmission in the loop
     PacketHeader header = {
@@ -182,14 +206,20 @@ void transmit(uint8_t packet_type, void* payload, uint8_t payload_size) {
       .payload_len = payload_size
     };
     
-    // Encode header + payload
-    uint8_t dataLen = encodeHex(TXBuffer, sizeof(TXBuffer), &header, payload);
-    if (dataLen == 0) {
-      Serial.println(F("[SX1278] Packet too large for TX buffer."));
-      continue;
+    // Pack raw binary data into TXBuffer // Encode header + payload
+    uint8_t dataLen = encodeHex(TXBuffer, &header, payload);
+    
+    // Translate numerical data into ASCII-hex encoding
+    const char hexChars[] = "0123456789ABCDEF";
+    uint16_t asciiLen = 0;  // Length of the new ASCII payload
+
+    for (int j = 0; j < dataLen; j++ ) {
+      // Extract top 4 bits (high nibble) and get corresponding hex char
+      asciiBuffer[asciiLen++] = hexChars[(TXBuffer[j] >> 4) & 0x0F];
+      // Extract bottom 4 bits (low nibble) and get corresponding hex char
+      asciiBuffer[asciiLen++] = hexChars[TXBuffer[j] & 0x0F];
     }
-    
-    
+
     Serial.print(F("[SX1278] Sending packet type "));
     Serial.print(packet_type);
     Serial.print(F(" (attempt "));
@@ -199,11 +229,11 @@ void transmit(uint8_t packet_type, void* payload, uint8_t payload_size) {
     Serial.print(F(") ... "));
 
     transmittedFlag = false;  // Reset flag before transmission
-    transmissionState = radio.startTransmit(TXBuffer, dataLen);
+    transmissionState = radio.startTransmit(asciiBuffer, asciiLen);
 
     if (transmissionState == RADIOLIB_ERR_NONE) {
       // Wait for setFlag() ISR to set transmittedFlag = true
-      unsigned long timeout = millis() + 5000;  // 5 second timeout
+      unsigned long timeout = millis() + 1000;  // 1 second timeout
       while (!transmittedFlag && millis() < timeout) {
         delay(10);
       }
@@ -224,40 +254,52 @@ void transmit(uint8_t packet_type, void* payload, uint8_t payload_size) {
 }
 
 void loop() {
-  bool buttonFlag = debounceRead(BUTTON_GPIO);
 
-  if(transmittedFlag && buttonFlag)
-  {
-    transmittedFlag = false;
+  
+  transmit(PACKET_IMU, &newIMUPayload, sizeof(newIMUPayload));
+  delay(2000);  // 2 second delay between transmissions for testing
 
-    // Update TC payload with fresh data
-    TCPayload tcData = {
-      .tc_avg1 = 25.5,
-      .tc_avg2 = 26.3
-    };
+  // bool buttonFlag = debounceRead(BUTTON_GPIO);
+  // // Serial.print("Button Flag: ");
+  // // Serial.println(buttonFlag);
+
+  // if(transmittedFlag && buttonFlag)
+  // {
+  //   transmittedFlag = false;
+
+  //   // Update TC payload with fresh data
+  //   TCPayload tcData = {
+  //     .tc_avg1 = 25.5,
+  //     .tc_avg2 = 26.3
+  //   };
     
-    // Try transmitting the IMU packet with fresh data
-    // IMUPayload imuData = {
-    //   .gx_dps = 1.2,
-    //   .gy_dps = 0.5,
-    //   .gz_dps = -0.8,
+  //   // Try transmitting the IMU packet with fresh data
+  //   // IMUPayload imuData = {
+  //   //   .gx_dps = 1.2,
+  //   //   .gy_dps = 0.5,
+  //   //   .gz_dps = -0.8,
+  //   //   .ax_mg = 100,
+  //   //   .ay_mg = -50,
+  //   //   .az_mg = 980,
 
-    //   .ax_mg = 100,
-    //   .ay_mg = -50,
-    //   .az_mg = 980,
+  //   //   .qi = 0.707,
+  //   //   .qj = 0,
+  //   //   .qk = 0.707,
+  //   //   .qr = 0
+  //   // };
 
-    //   .qi = 0.707,
-    //   .qj = 0,
-    //   .qk = 0.707,
-    //   .qr = 0
-    // };
+  //   // transmit(PACKET_IMU, &newIMUPayload, sizeof(newIMUPayload));
+  //   transmit(PACKET_TC, &tcData, sizeof(TCPayload));
+  //   // transmit(PACKET_STRING, &stringPacket, sizeof(StringPayload));
 
-    // transmit(PACKET_IMU, &newIMUPayload, sizeof(newIMUPayload));
-    // transmit(PACKET_TC, &tcData, sizeof(TCPayload));
-
-    transmit(PACKET_STRING, &stringPacket, sizeof(StringPayload));
-
-  }
+  //   // transmit(PACKET_FULL_TELEMETRY, &newfull_telemetry, sizeof(full_telemetry));
+  //   // wait(30000);  // Wait 30 secs before next transmission
+  //   // if (heard successful reception from GS with checksum verification) {
+  //   //    then move on to next data to transmit  
+  //   // } else {
+  //   //   retry the same data transmission in the next loop 
+  //   // }
+  // }
 }
 
 
