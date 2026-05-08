@@ -1,7 +1,7 @@
 // include the library
 #include <Arduino.h>
 #include <RadioLib.h>
-#include "HopeRFTX.h"
+#include "Packet.h"
 
 namespace {
   constexpr size_t kTxBufferSize = 256;

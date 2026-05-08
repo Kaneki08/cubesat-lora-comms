@@ -7,4 +7,4 @@ include_directories(src)
 
 add_executable(cubesat_lora_comms
         src/HopeRFTX.cpp
-        src/HopeRFTX.h)
+        src/Packet.h)
