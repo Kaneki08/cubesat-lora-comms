@@ -207,7 +207,7 @@ void transmit(uint8_t packet_type, void* payload, uint8_t payload_size) {
     };
     
     // Pack raw binary data into TXBuffer // Encode header + payload
-    uint8_t dataLen = encodeHex(TXBuffer, &header, payload);
+    uint8_t dataLen = encodeHex(TXBuffer, sizeof(TXBuffer), &header, payload); 
     
     // Translate numerical data into ASCII-hex encoding
     const char hexChars[] = "0123456789ABCDEF";
