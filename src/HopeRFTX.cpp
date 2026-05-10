@@ -2,6 +2,7 @@
 #include <Arduino.h>
 #include <RadioLib.h>
 #include "Packet.h"
+#include "HopeRFTX.h"
 
 namespace {
   constexpr size_t kTxBufferSize = 256;

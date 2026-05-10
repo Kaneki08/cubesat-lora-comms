@@ -1,5 +1,4 @@
-#ifndef HOPERFTX_H
-#define HOPERFTX_H
+#pragma once
 
 #include <stdint.h>
 #include <string.h>
@@ -210,5 +209,3 @@ struct full_telemetry {
 int transmitData();
 uint8_t encodeHex(uint8_t* queue, size_t queue_size, const PacketHeader* header, const void* payload);
 bool debounceRead(int gpio);
-
-#endif // HOPERFTX_H
