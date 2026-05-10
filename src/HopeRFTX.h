@@ -8,4 +8,4 @@ uint8_t encodeHex(uint8_t* queue, size_t queue_size, const PacketHeader* header,
 bool debounceRead(int gpio);
 
 // Transmits a packet with the given type and payload over radio
-void transmit(uint8_t packet_type, void* payload, uint8_t payload_size);
+void transmit(SX1278& radio, uint8_t packet_type, void* payload, uint8_t payload_size, uint16_t& count);

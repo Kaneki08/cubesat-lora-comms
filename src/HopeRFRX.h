@@ -7,7 +7,7 @@
 
 // Receives a packet into buffer over radio.
 // Returns true if packet passed CRC, false otherwise.
-bool receive(uint8_t* buffer, size_t size);
+bool receive(SX1278& radio, uint8_t* buffer, size_t size);
 
 // Parses a raw buffer into an AcknowledgementPacket struct.
 // Assumes little endian byte order.
@@ -15,4 +15,4 @@ bool receive(uint8_t* buffer, size_t size);
 bool parseAcknowledgementPacket(uint8_t* buffer, size_t size, AcknowledgementPacket& packet);
 
 // Returns true if an ACK packet matching sequence_number was received.
-bool acknowledged(uint16_t sequence_number);
+bool acknowledged(SX1278& radio, uint16_t sequence_number);
