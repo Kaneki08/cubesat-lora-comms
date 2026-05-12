@@ -1,16 +1,10 @@
 #include <RadioLib.h>
 #include <Arduino.h>
 #include <stdint.h>
-#include <Packet.h>
-#include <memory>
+#include "Packet.h"
+#include "HopeRFRX.h"
 
-Module module(7, 1, 2, 0);
-SX1278 radio(&module);
-
-
-
-bool receive(uint8_t* buffer, size_t size)
-{
+bool receive(SX1278& radio, uint8_t* buffer, size_t size){
     int state = radio.receive(buffer, size, 0);
 
     if (state == RADIOLIB_ERR_NONE) {
@@ -32,7 +26,6 @@ bool receive(uint8_t* buffer, size_t size)
         Serial.println(state);
         return false;
     }
-
 }
 
 // ASSUMES LITTLE ENDIAN
@@ -57,10 +50,10 @@ bool parseAcknowledgementPacket(uint8_t* buffer, size_t size, AcknowledgementPac
 }
 
 // returns true if the acknowledgement packet with sequence_number was receieved
-bool acknowledged(uint16_t sequence_number) {
+bool acknowledged(SX1278& radio, uint16_t sequence_number) {
     uint8_t buffer[SIZE_OF_PACKET_ACK] = {};
 
-    if (receive(buffer, sizeof(buffer))) {
+    if (receive(radio, buffer, sizeof(buffer))) {
         AcknowledgementPacket packet{};
 
         if (!parseAcknowledgementPacket(buffer, SIZE_OF_PACKET_ACK, packet)) {
@@ -77,4 +70,16 @@ bool acknowledged(uint16_t sequence_number) {
     return false;
 }
 
-
+// listens for handshake message from GS
+// Returns true if handshake packet sends "ZOT ZOT ZOT from GS"
+bool receiveHandshake(SX1278& radio) {
+    uint8_t buffer[sizeof(StringPayload)];
+    if (receive(radio, buffer, sizeof(buffer))) {
+        StringPayload* response = (StringPayload*)buffer;
+        if (strcmp(response->message, "ZOT ZOT ZOT from GS") == 0) {
+            return true;
+        }
+        Serial.println("unexpected handshake response");
+    }
+    return false;
+}

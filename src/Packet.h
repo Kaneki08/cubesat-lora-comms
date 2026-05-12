@@ -1,11 +1,11 @@
-#ifndef HOPERFTX_H
-#define HOPERFTX_H
+#pragma once
 
 #include <stdint.h>
 #include <string.h>
 
 // MACROS
 #define BUTTON_GPIO 10
+#define SIZE_OF_PACKET_ACK 3
 
 // Packet type definitions
 enum PacketType
@@ -14,7 +14,8 @@ enum PacketType
   PACKET_IMU = 2,  // imu data packet
   PACKET_TC = 3,  // thermocouple data packet
   PACKET_STRING = 4,  // string data packet
-  PACKET_FULL_TELEMETRY = 5  // combined telemetry packet
+  PACKET_FULL_TELEMETRY = 5,  // combined telemetry packet
+  PACKET_ACK = 6 // acknowledgement packet
 };
 
 // Packet frame structuring with tight byte packing 
@@ -36,6 +37,10 @@ struct PacketHeader
   uint8_t payload_len;    // in bytes
 };
 
+struct AcknowledgementPacket {
+    uint8_t packet_type;
+    uint16_t sequence;
+};
 
 /*
 Expand out the following payloads with all necessary info according to https://docs.google.com/spreadsheets/d/13qsSh9g_9VDnHY6Gt52Ryx6YPZemS3kZyaQAJXoeYj8/edit?usp=sharing
@@ -213,5 +218,3 @@ struct full_telemetry {
 int transmitData();
 uint8_t encodeHex(uint8_t* queue, size_t queue_size, const PacketHeader* header, const void* payload);
 bool debounceRead(int gpio);
-
-#endif // HOPERFTX_H
