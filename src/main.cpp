@@ -5,6 +5,15 @@
 #include "HopeRFTX.h"
 #include "HopeRFRX.h"
 
+// String packet
+StringPayload stringPacket;
+
+// counter to keep track of transmitted packets
+uint16_t count = 0;
+
+// handshake flag
+bool handshakeComplete = false;
+
 // Initialize HopeRF
 // Module(cs=7, irq=1, rst=2, gpio=0)
 Module module(7, 1, 2, 0);
@@ -67,12 +76,6 @@ struct full_telemetry newfull_telemetry = {
 // Test string transmission 
 byte helloLora[10] = {0x68, 0x65, 0x6C, 0x6C, 0x6F, 0x20, 0x4C, 0x6F, 0x52, 0x61};
 
-// String packet
-StringPayload stringPacket;
-
-// counter to keep track of transmitted packets
-uint16_t count = 0;
-
 // setup esp
 void setup() {
     Serial.begin(115200);
@@ -105,6 +108,15 @@ void setup() {
 // loop function to loop the transmission
 void loop() {
     // handshake
+    if (!handshakeComplete) {
+        strcpy(stringPacket.message, "ZOT ZOT ZOT from SAT");
+        transmit(radio, PACKET_STRING ,&stringPacket, sizeof(stringPacket), count);
+        if (receiveHandshake(radio)) {
+            handshakeComplete = true;
+        }
+        // don't transmit unless handshake is established
+        return;
+    }
     
     // transmit
     // just send packetIMU for testing

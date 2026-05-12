@@ -16,3 +16,7 @@ bool parseAcknowledgementPacket(uint8_t* buffer, size_t size, AcknowledgementPac
 
 // Returns true if an ACK packet matching sequence_number was received.
 bool acknowledged(SX1278& radio, uint16_t sequence_number);
+
+// listens for handshake message from GS
+// Returns true if handshake packet sends "ZOT ZOT ZOT from GS"
+bool receiveHandshake(SX1278& radio);

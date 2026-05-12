@@ -70,4 +70,16 @@ bool acknowledged(SX1278& radio, uint16_t sequence_number) {
     return false;
 }
 
-
+// listens for handshake message from GS
+// Returns true if handshake packet sends "ZOT ZOT ZOT from GS"
+bool receiveHandshake(SX1278& radio) {
+    uint8_t buffer[sizeof(StringPayload)];
+    if (receive(radio, buffer, sizeof(buffer))) {
+        StringPayload* response = (StringPayload*)buffer;
+        if (strcmp(response->message, "ZOT ZOT ZOT from GS") == 0) {
+            return true;
+        }
+        Serial.println("unexpected handshake response");
+    }
+    return false;
+}
