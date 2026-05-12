@@ -32,13 +32,11 @@ bool receive(uint8_t* buffer, size_t size)
         Serial.println(state);
         return false;
     }
-    
-
 
 }
 
 // ASSUMES LITTLE ENDIAN
-bool parseAcknowledgementPacket(uint8_t* buffer, size_t size, AcknowledgementPacket& packet) {
+bool parseAcknowledgementPacket(uint8_t* buffer, size_t size, AcknowledgementPacket &packet) {
     if (size < 3) {
         Serial.println("ACK packet too small");
         return false;

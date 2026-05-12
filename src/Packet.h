@@ -20,6 +20,9 @@ enum PacketType
 // Packet frame structuring with tight byte packing 
 #pragma pack(push, 1)
 
+// ACK Packet
+
+
 /*
 Packet header is 9 bytes
 */
