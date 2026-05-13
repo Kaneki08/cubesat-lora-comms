@@ -107,27 +107,31 @@ void setup() {
 
 // loop function to loop the transmission
 void loop() {
-    // handshake
-    if (!handshakeComplete) {
-        strcpy(stringPacket.message, "ZOT ZOT ZOT from SAT");
-        transmit(radio, PACKET_STRING ,&stringPacket, sizeof(stringPacket), count);
-        if (receiveHandshake(radio)) {
-            handshakeComplete = true;
-        }
-        // don't transmit unless handshake is established
-        return;
-    }
     
-    // transmit
-    // just send packetIMU for testing
-    transmit(radio, PACKET_IMU, &newIMUPayload, sizeof(newIMUPayload), count);
+    // testReceive(radio);
+
+    // // handshake
+    // if (!handshakeComplete) {
+    //     strcpy(stringPacket.message, "ZOT ZOT ZOT from SAT");
+    //     transmit(radio, PACKET_STRING ,&stringPacket, sizeof(stringPacket), count);
+    //     if (receiveHandshake(radio)) {
+    //         handshakeComplete = true;
+    //     }
+    //     // don't transmit unless handshake is established
+    //     return;
+    // }
     
-    // wait for ack
-    if (acknowledged(radio, count - 1)) {
-        Serial.println("ACK received");
-    } else {
-        Serial.println("ACK failed, retrying...");
-    }
+    // // transmit
+    // // just send packetIMU for testing
+    // transmit(radio, PACKET_IMU, &newIMUPayload, sizeof(newIMUPayload), count);
     
-    delay(2000);
+    // // wait for ack
+    // if (acknowledged(radio, count - 1)) {
+    //     Serial.println("ACK received");
+    // } else {
+    //     Serial.println("ACK failed, retrying...");
+    // }
+    
+    // delay(2000);
 }
+

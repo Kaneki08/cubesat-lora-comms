@@ -1,3 +1,7 @@
+#ifndef HOPERFTX_H
+#define HOPERFTX_H
+
+
 #pragma once
 
 // Encodes header and payload into a byte array for transmission
@@ -9,3 +13,8 @@ bool debounceRead(int gpio);
 
 // Transmits a packet with the given type and payload over radio
 void transmit(SX1278& radio, uint8_t packet_type, void* payload, uint8_t payload_size, uint16_t& count);
+
+// Listen to everything on RX
+void testReceive(SX1278& radio);
+
+#endif // HOPERFTX_H

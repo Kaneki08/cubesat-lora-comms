@@ -1,3 +1,6 @@
+#ifndef HOPERFRX_H
+#define HOPERFRX_H
+
 #pragma once
 
 #include <RadioLib.h>
@@ -20,3 +23,5 @@ bool acknowledged(SX1278& radio, uint16_t sequence_number);
 // listens for handshake message from GS
 // Returns true if handshake packet sends "ZOT ZOT ZOT from GS"
 bool receiveHandshake(SX1278& radio);
+
+#endif // HOPERFRX_H

@@ -1,3 +1,6 @@
+#ifndef PACKET_H
+#define PACKET_
+
 #pragma once
 
 #include <stdint.h>
@@ -218,3 +221,5 @@ struct full_telemetry {
 int transmitData();
 uint8_t encodeHex(uint8_t* queue, size_t queue_size, const PacketHeader* header, const void* payload);
 bool debounceRead(int gpio);
+
+#endif
