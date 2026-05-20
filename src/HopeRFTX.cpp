@@ -4,6 +4,12 @@
 #include "Packet.h"
 #include "HopeRFTX.h"
 
+
+
+void transmit_beacon() {
+
+}
+
 /*
 encodeHex():
 Parses header and payload data into a byte array for radio.transmit().
@@ -48,6 +54,59 @@ bool debounceRead(int gpio) {
 
     return false;
 }
+
+// Transmit wrapper around transmitOnce
+void transmitNTimes(SX1278& radio, uint8_t packet_type, void* payload, uint8_t payload_size, uint16_t& count, uint8_t repeats) {
+    for (int i = 0; i < repeats; i++)
+        transmitOnce(radio, packet_type, payload, payload_size, count, 0, 0);
+}
+
+// Transmit a packet once
+void transmitOnce(SX1278& radio, uint8_t packet_type, void* payload, uint8_t payload_size, uint16_t& count, uint8_t downlink_start, uint8_t downlink_end) {
+    int transmissionState = RADIOLIB_ERR_NONE;
+    uint8_t TXBuffer[128];    // Holds raw binary data
+    uint8_t asciiBuffer[256]; // Holds coverted ASCII-hex data (needs to be 2x the size)
+
+        PacketHeader header = {
+            .sat_id = 0x01,
+            .packet_type = packet_type,      // Use passed packet type
+            .sequence = count++,              // Increment sequence number
+            .timestamp = millis(),            // Fresh timestamp
+            .payload_len = payload_size
+        };
+
+    // Pack raw binary data into TXBuffer // Encode header + payload
+    uint8_t dataLen = encodeHex(TXBuffer, sizeof(TXBuffer), &header, payload); 
+    
+    // Translate numerical data into ASCII-hex encoding
+    const char hexChars[] = "0123456789ABCDEF";
+    uint16_t asciiLen = 0;  // Length of the new ASCII payload
+
+    for (int j = 0; j < dataLen; j++ ) {
+        // Extract top 4 bits (high nibble) and get corresponding hex char
+        asciiBuffer[asciiLen++] = hexChars[(TXBuffer[j] >> 4) & 0x0F];
+        // Extract bottom 4 bits (low nibble) and get corresponding hex char
+        asciiBuffer[asciiLen++] = hexChars[TXBuffer[j] & 0x0F];
+    }
+
+    Serial.print(F("[SX1278] Sending packet type "));
+    Serial.print(packet_type);
+    
+    transmissionState = radio.transmit(asciiBuffer, asciiLen);
+
+    if (transmissionState == RADIOLIB_ERR_NONE) {
+        Serial.println(F("transmission finished!"));
+    } else if (transmissionState == RADIOLIB_ERR_TX_TIMEOUT) {
+        Serial.println(F("transmission timeout!"));
+    } else {
+        Serial.print(F("failed, code "));
+        Serial.println(transmissionState);
+    }
+
+    delay(500); // Temporary Safe Time on Air value of 0.5s
+
+}
+
 
 // helper function to transit packages
 void transmit(SX1278& radio, uint8_t packet_type, void* payload, uint8_t payload_size, uint16_t& count) {
@@ -103,7 +162,7 @@ void transmit(SX1278& radio, uint8_t packet_type, void* payload, uint8_t payload
             Serial.println(transmissionState);
         }
 
-        delay(500);  // Wait before next transmission
+        // delay(500);  // Wait before next transmission  // depends on the Time on Air 
     }
 }
 

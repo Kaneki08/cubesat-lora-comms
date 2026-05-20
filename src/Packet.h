@@ -38,6 +38,8 @@ struct PacketHeader
   uint16_t sequence;      // packet order since transmission cycle start
   uint32_t timestamp;     // since program start
   uint8_t payload_len;    // in bytes
+  uint8_t downlink_start; // 0 or 1
+  uint8_t downlink_end;   // 0 or 1
 };
 
 struct AcknowledgementPacket {

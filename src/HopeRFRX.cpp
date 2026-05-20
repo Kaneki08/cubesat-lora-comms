@@ -91,7 +91,6 @@ Test function to listen for Hello LoRa
 
 void testReceive(SX1278& radio) {
     uint8_t buffer[10];
-
     if (receive(radio, buffer, sizeof(buffer))) {
         StringPayload* response = (StringPayload*)buffer;
         Serial.println(response->message);

@@ -5,10 +5,14 @@
 #include "HopeRFTX.h"
 #include "HopeRFRX.h"
 
+enum STATE {BEACON, DOWNLINK, UPLINK};
+
+STATE currentState = BEACON;
+
 // String packet
 StringPayload stringPacket;
 
-// counter to keep track of transmitted packets
+// Counter to keep track of transmitted packets 
 uint16_t count = 0;
 
 // handshake flag
@@ -80,7 +84,6 @@ byte helloLora[10] = {0x68, 0x65, 0x6C, 0x6C, 0x6F, 0x20, 0x4C, 0x6F, 0x52, 0x61
 void setup() {
     Serial.begin(115200);
     delay(1000);
-    // SPI.begin(4, 6, 5, 7);  // this is wrong pin mapping
     SPI.begin(4, 5, 6, 7);  // SCK, MISO, MOSI, SS (CS) pins for ESP32-C3
 
     pinMode(BUTTON_GPIO, INPUT_PULLUP);
@@ -90,7 +93,6 @@ void setup() {
 
     // frequency, bandwidth, sf, cr, syncword, TX Power, LoRa PHY preamble length, rx gain (AGC)
     int state = radio.begin(433.0, 125.0, 9, 7, RADIOLIB_SX127X_SYNC_WORD, 10, 8, 0);
-
 
     if (state == RADIOLIB_ERR_NONE) {
         state = radio.setCRC(true);
@@ -105,33 +107,54 @@ void setup() {
     }
 }
 
-// loop function to loop the transmission
 void loop() {
-    
-    // testReceive(radio);
 
-    // // handshake
-    // if (!handshakeComplete) {
-    //     strcpy(stringPacket.message, "ZOT ZOT ZOT from SAT");
-    //     transmit(radio, PACKET_STRING ,&stringPacket, sizeof(stringPacket), count);
-    //     if (receiveHandshake(radio)) {
-    //         handshakeComplete = true;
-    //     }
-    //     // don't transmit unless handshake is established
-    //     return;
-    // }
+
+    switch (currentState) {
     
-    // // transmit
-    // // just send packetIMU for testing
-    // transmit(radio, PACKET_IMU, &newIMUPayload, sizeof(newIMUPayload), count);
+    case BEACON:    
+        // 1.   Beacon transmit the handshake
+        if (!handshakeComplete) {       // handshake
+            strcpy(stringPacket.message, "ZOT ZOT ZOT from SAT");
+            for (int repeat = 0; repeat < 2; repeat ++)     // Send two beacon packets
+                transmitOnce(radio, PACKET_STRING, &stringPacket, sizeof(stringPacket), count, 0, 0);
+            if (receiveHandshake(radio)) {
+                handshakeComplete = true;
+                currentState = DOWNLINK;
+            }
+            return;   // No Downlink before handshake is established
+        }
+
+        delay(30000);      // 2.   Wait for 30 seconds for a response from GS
+        
+        // 3.   If ACK: complete handshake with ACK back and begin downlink, else return
+        if (acknowledged(radio, count - 1)) {         // wait for ACK
+            Serial.println("ACK received");
+        } else {
+            Serial.println("ACK failed, retrying...");
+        }
+
+        break;
     
-    // // wait for ack
-    // if (acknowledged(radio, count - 1)) {
-    //     Serial.println("ACK received");
-    // } else {
-    //     Serial.println("ACK failed, retrying...");
-    // }
+    case DOWNLINK:
+        transmitOnce(radio, PACKET_IMU, &newIMUPayload, sizeof(newIMUPayload), count, 1, 0);
+        transmitNTimes(radio, PACKET_IMU, &newIMUPayload, sizeof(newIMUPayload), count, 5);
+        transmitOnce(radio, PACKET_IMU, &newIMUPayload, sizeof(newIMUPayload), count, 0, 1);
+
+        currentState = UPLINK;
+        
+
+        break;
     
-    // delay(2000);
+    case UPLINK:
+        testReceive(radio);
+        break;
+
+    default:
+        break;
+    }
+
+
+    delay(2000);
 }
 
