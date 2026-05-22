@@ -5,7 +5,7 @@
 #include "HopeRFRX.h"
 
 bool receive(SX1278& radio, uint8_t* buffer, size_t size){
-    int state = radio.receive(buffer, size, 0);
+    int state = radio.receive(buffer, size, 3000);
 
     if (state == RADIOLIB_ERR_NONE) {
         // packet passed CRC
@@ -90,11 +90,17 @@ Test function to listen for Hello LoRa
 */
 
 void testReceive(SX1278& radio) {
-    uint8_t buffer[10];
+    uint8_t buffer[50];
     if (receive(radio, buffer, sizeof(buffer))) {
+        Serial.print("Raw buffer: ");
+        for (int i = 0; i < sizeof(buffer); i++) {
+            Serial.print(buffer[i], HEX);
+            Serial.print(" ");
+        }
+        Serial.println();
+
         StringPayload* response = (StringPayload*)buffer;
         Serial.println(response->message);
-        printf("%s\n", response);
     }
 
 }
