@@ -12,6 +12,8 @@
 // Returns true if packet passed CRC, false otherwise.
 bool receive(SX1278& radio, uint8_t* buffer, size_t size);
 
+void printRXBuffer(uint8_t* buffer, int len);
+
 // Parses a raw buffer into an AcknowledgementPacket struct.
 // Assumes little endian byte order.
 // Returns false if buffer is too small or packet type is not ACK.

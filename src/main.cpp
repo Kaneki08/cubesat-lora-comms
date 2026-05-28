@@ -80,6 +80,13 @@ struct full_telemetry newfull_telemetry = {
 // Test string transmission 
 byte helloLora[10] = {0x68, 0x65, 0x6C, 0x6C, 0x6F, 0x20, 0x4C, 0x6F, 0x52, 0x61};
 
+
+volatile bool rxReady = false;
+
+void IRAM_ATTR onReceive() {
+    rxReady = true;
+}
+
 // setup esp
 void setup() {
     Serial.begin(115200);
@@ -92,7 +99,12 @@ void setup() {
     Serial.print(F("[SX1278] Initializing ... "));
 
     // frequency, bandwidth, sf, cr, syncword, TX Power, LoRa PHY preamble length, rx gain (AGC)
-    int state = radio.begin(433.0, 125.0, 9, 7, RADIOLIB_SX127X_SYNC_WORD, 10, 8, 0);
+    // int state = radio.begin(433.0, 125.0, 9, 7, RADIOLIB_SX127X_SYNC_WORD, 10, 8, 0);
+    int state = radio.begin(433.0, 125.0, 9, 4, 0x12, 10, 8, 0);
+
+    if (state == RADIOLIB_ERR_NONE) {
+        state = radio.explicitHeader();
+    }
 
     if (state == RADIOLIB_ERR_NONE) {
         state = radio.setCRC(true);
@@ -105,11 +117,34 @@ void setup() {
         Serial.println(state);
         while (true) { delay(10); }
     }
+
+    radio.setPacketReceivedAction(onReceive);   // Register ISR
+    radio.startReceive();
 }
+
 
 void loop() {
 
-    testReceive(radio);
+    if (rxReady) {
+        rxReady = false;    // clear flag
+
+        int len = radio.getPacketLength();
+        uint8_t buf[len];  
+        int state = radio.readData(buf, len);
+
+        if (state == RADIOLIB_ERR_NONE) {
+            Serial.println("valid packet");
+            printRXBuffer(buf, len);
+        } else if (state == RADIOLIB_ERR_CRC_MISMATCH) {
+            Serial.println("CRC mismatch");
+        } else {
+            Serial.print("read data failed: ");
+            Serial.println(state);
+        }
+
+        radio.startReceive();   // re-arm receiver
+    }
+
     // Serial.println(F("Hello from main!"));
 
     // switch (currentState) {

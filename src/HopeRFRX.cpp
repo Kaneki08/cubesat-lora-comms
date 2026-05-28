@@ -89,19 +89,17 @@ bool receiveHandshake(SX1278& radio) {
 Test function to listen for Hello LoRa
 */
 
-void testReceive(SX1278& radio) {
-    uint8_t buffer[50];
-    if (receive(radio, buffer, sizeof(buffer))) {
-        Serial.print("Raw buffer: ");
-        for (int i = 0; i < sizeof(buffer); i++) {
-            Serial.print(buffer[i], HEX);
-            Serial.print(" ");
-        }
-        Serial.println();
-
-        StringPayload* response = (StringPayload*)buffer;
-        Serial.println(response->message);
+void printRXBuffer(uint8_t* buffer, int len) {    
+    Serial.print("Raw buffer: ");
+    for (int i = 0; i < len ; i++) {
+        Serial.print(buffer[i], HEX);
+        Serial.print(" ");
     }
+    Serial.println();
+    char str[len+1];
+    memcpy(str, buffer, len);
+    str[len] = '\0';
+    Serial.println(str);
 
 }
 
