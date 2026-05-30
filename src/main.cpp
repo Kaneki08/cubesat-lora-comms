@@ -147,49 +147,49 @@ void loop() {
 
     // Serial.println(F("Hello from main!"));
 
-    // switch (currentState) {
+    switch (currentState) {
     
-    // case BEACON:    
-    //     // 1.   Beacon transmit the handshake
-    //     if (!handshakeComplete) {       // handshake
-    //         strcpy(stringPacket.message, "ZOT ZOT ZOT from SAT");
-    //         for (int repeat = 0; repeat < 2; repeat ++)     // Send two beacon packets
-    //             transmitOnce(radio, PACKET_STRING, &stringPacket, sizeof(stringPacket), count, 0, 0);
-    //         if (receiveHandshake(radio)) {
-    //             handshakeComplete = true;
-    //             currentState = DOWNLINK;
-    //         }
-    //         return;   // No Downlink before handshake is established
-    //     }
+    case BEACON:    
+        // 1.   Beacon transmit the handshake
+        if (!handshakeComplete) {       // handshake
+            strcpy(stringPacket.message, "ZOT ZOT ZOT from SAT");
+            for (int repeat = 0; repeat < 2; repeat ++)     // Send two beacon packets
+                transmitOnce(radio, PACKET_STRING, &stringPacket, sizeof(stringPacket), count, 0, 0);
+            if (receiveHandshake(radio)) {
+                handshakeComplete = true;
+                currentState = DOWNLINK;
+            }
+            return;   // No Downlink before handshake is established
+        }
 
-    //     delay(30000);      // 2.   Wait for 30 seconds for a response from GS
+        delay(30000);      // 2.   Wait for 30 seconds for a response from GS
         
-    //     // 3.   If ACK: complete handshake with ACK back and begin downlink, else return
-    //     if (acknowledged(radio, count - 1)) {         // wait for ACK
-    //         Serial.println("ACK received");
-    //     } else {
-    //         Serial.println("ACK failed, retrying...");
-    //     }
+        // 3.   If ACK: complete handshake with ACK back and begin downlink, else return
+        if (acknowledged(radio, count - 1)) {         // wait for ACK
+            Serial.println("ACK received");
+        } else {
+            Serial.println("ACK failed, retrying...");
+        }
 
-    //     break;
+        break;
     
-    // case DOWNLINK:
-    //     transmitOnce(radio, PACKET_IMU, &newIMUPayload, sizeof(newIMUPayload), count, 1, 0);
-    //     transmitNTimes(radio, PACKET_IMU, &newIMUPayload, sizeof(newIMUPayload), count, 5);
-    //     transmitOnce(radio, PACKET_IMU, &newIMUPayload, sizeof(newIMUPayload), count, 0, 1);
+    case DOWNLINK:
+        transmitOnce(radio, PACKET_IMU, &newIMUPayload, sizeof(newIMUPayload), count, 1, 0);
+        transmitNTimes(radio, PACKET_IMU, &newIMUPayload, sizeof(newIMUPayload), count, 5);
+        transmitOnce(radio, PACKET_IMU, &newIMUPayload, sizeof(newIMUPayload), count, 0, 1);
 
-    //     currentState = UPLINK;
+        currentState = UPLINK;
         
 
-    //     break;
+        break;
     
-    // case UPLINK:
-    //     testReceive(radio);
-    //     break;
+    case UPLINK:
+        testReceive(radio);
+        break;
 
-    // default:
-    //     break;
-    // }
+    default:
+        break;
+    }
 
 
     
