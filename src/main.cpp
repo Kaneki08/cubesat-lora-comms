@@ -91,11 +91,8 @@ bool doHandshake(SX1278& radio, uint16_t& count, int timeout_ms){
 	strcpy(stringPacket.message, "ZOT ZOT ZOT from SAT");
 	for (int repeat = 0; repeat < 2; repeat ++)     // Send two beacon packets
 		transmitOnce(radio, PACKET_STRING, &stringPacket, sizeof(stringPacket), count, 0, 0);
-	if (receiveHandshake(radio)) {
-		return true;
-	}
 
-	return false;
+	return acknowledged(radio, count - 1, timeout_ms);
 
 }
 
@@ -165,21 +162,13 @@ void loop() {
         // 1.   Beacon transmit the handshake
         if (!handshakeComplete) {
 			// handshake
-			if(!doHandshake()){
+			if(!doHandshake(radio, count, 60000)){
 				return;
 			}
 			else {
 				handshakeComplete = true;
                 currentState = DOWNLINK;
 			}
-        }
-
-
-        // 3.   If ACK: complete handshake with ACK back and begin downlink, else return
-        if (acknowledged(radio, count - 1)) {         // wait for ACK
-            Serial.println("ACK received");
-        } else {
-            Serial.println("ACK failed, retrying...");
         }
 
         break;
