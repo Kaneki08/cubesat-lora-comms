@@ -11,6 +11,7 @@
 // Receives a packet into buffer over radio.
 // Returns true if packet passed CRC, false otherwise.
 bool receive(SX1278& radio, uint8_t* buffer, size_t size);
+bool receive(SX1278& radio, uint8_t* buffer, size_t size, int timeout_ms);
 
 void printRXBuffer(uint8_t* buffer, int len);
 
@@ -20,7 +21,7 @@ void printRXBuffer(uint8_t* buffer, int len);
 bool parseAcknowledgementPacket(uint8_t* buffer, size_t size, AcknowledgementPacket& packet);
 
 // Returns true if an ACK packet matching sequence_number was received.
-bool acknowledged(SX1278& radio, uint16_t sequence_number);
+bool acknowledged(SX1278& radio, uint16_t sequence_number, int timeout_ms);
 
 // listens for handshake message from GS
 // Returns true if handshake packet sends "ZOT ZOT ZOT from GS"

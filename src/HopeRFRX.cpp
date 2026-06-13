@@ -4,28 +4,34 @@
 #include "Packet.h"
 #include "HopeRFRX.h"
 
-bool receive(SX1278& radio, uint8_t* buffer, size_t size){
-    int state = radio.receive(buffer, size, 3000);
 
-    if (state == RADIOLIB_ERR_NONE) {
-        // packet passed CRC
-        Serial.println("valid packet");
-        return true;
-    }
-    else if (state == RADIOLIB_ERR_CRC_MISMATCH) {
-        // packet was received but CRC failed
-        Serial.println("bad packet / corrupted");
-        return false;
-    }
-    else if (state == RADIOLIB_ERR_RX_TIMEOUT) {
-        Serial.println("ACK receive timeout");
-        return false;
-    }
-    else {
-        Serial.print("receive failed: ");
-        Serial.println(state);
-        return false;
-    }
+
+bool receive(SX1278& radio, uint8_t* buffer, size_t size, int timeout_ms){
+	int state = radio.receive(buffer, size, timeout_ms);
+
+	if (state == RADIOLIB_ERR_NONE) {
+		// packet passed CRC
+		Serial.println("valid packet");
+		return true;
+	}
+	else if (state == RADIOLIB_ERR_CRC_MISMATCH) {
+		// packet was received but CRC failed
+		Serial.println("bad packet / corrupted");
+		return false;
+	}
+	else if (state == RADIOLIB_ERR_RX_TIMEOUT) {
+		Serial.println("receive timeout");
+		return false;
+	}
+	else {
+		Serial.print("receive failed: ");
+		Serial.println(state);
+		return false;
+	}
+}
+
+bool receive(SX1278& radio, uint8_t* buffer, size_t size){
+	return receive(radio, buffer, size, 3000);
 }
 
 // ASSUMES LITTLE ENDIAN
@@ -50,10 +56,10 @@ bool parseAcknowledgementPacket(uint8_t* buffer, size_t size, AcknowledgementPac
 }
 
 // returns true if the acknowledgement packet with sequence_number was receieved
-bool acknowledged(SX1278& radio, uint16_t sequence_number) {
+bool acknowledged(SX1278& radio, uint16_t sequence_number, int timeout_ms) {
     uint8_t buffer[SIZE_OF_PACKET_ACK] = {};
 
-    if (receive(radio, buffer, sizeof(buffer))) {
+    if (receive(radio, buffer, sizeof(buffer), timeout_ms)) {
         AcknowledgementPacket packet{};
 
         if (!parseAcknowledgementPacket(buffer, SIZE_OF_PACKET_ACK, packet)) {
@@ -73,14 +79,27 @@ bool acknowledged(SX1278& radio, uint16_t sequence_number) {
 // listens for handshake message from GS
 // Returns true if handshake packet sends "ZOT ZOT ZOT from GS"
 bool receiveHandshake(SX1278& radio) {
-    uint8_t buffer[sizeof(StringPayload)];
-    if (receive(radio, buffer, sizeof(buffer))) {
-        StringPayload* response = (StringPayload*)buffer;
-        if (strcmp(response->message, "ZOT ZOT ZOT from GS") == 0) {
+    const unsigned long deadline = millis() + 60000UL;
+    const char expected[] = "ZOT ZOT ZOT from GS";
+
+    while ((long)(deadline - millis()) > 0) {
+        uint8_t buffer[sizeof(StringPayload)] = {};
+        int remaining_ms = (int)(deadline - millis());
+
+        if (!receive(radio, buffer, sizeof(buffer), remaining_ms)) {
+            continue;
+        }
+
+        StringPayload* response = reinterpret_cast<StringPayload*>(buffer);
+        response->message[sizeof(response->message) - 1] = '\0';
+
+        if (strcmp(response->message, expected) == 0) {
             return true;
         }
+
         Serial.println("unexpected handshake response");
     }
+
     return false;
 }
 
