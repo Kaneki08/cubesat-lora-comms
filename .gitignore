@@ -9,3 +9,4 @@
 
 # macOS junk
 .DS_Store
+/cmake-build-debug/

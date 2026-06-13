@@ -199,6 +199,12 @@ struct StringPayload {
   char message[50]; // 50-byte string buffer
 };
 
+struct AcknowledgementPacket {
+  uint8_t packet_type = 67;    // something to mark this as an acknowledgement packet
+  uint16_t sequence;      // the sequence # of the packet being acknowledged as received
+
+}
+
 
 /*
 20 bytes for IMU + 

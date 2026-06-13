@@ -1,3 +1,0 @@
-/mnt/c/Users/clair/CLionProjects/cubesat-lora-comms/cmake-build-debug/CMakeFiles/cubesat_lora_comms.dir
-/mnt/c/Users/clair/CLionProjects/cubesat-lora-comms/cmake-build-debug/CMakeFiles/edit_cache.dir
-/mnt/c/Users/clair/CLionProjects/cubesat-lora-comms/cmake-build-debug/CMakeFiles/rebuild_cache.dir
